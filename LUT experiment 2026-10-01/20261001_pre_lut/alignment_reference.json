@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "encoder_counts_per_revolution": 16384,
+  "max_automatic_correction_deg": 2.5,
+  "nodes": {
+    "2": {
+      "aligned_raw_count": 10369,
+      "aligned_raw_deg": 227.83447265625
+    },
+    "3": {
+      "aligned_raw_count": 4899,
+      "aligned_raw_deg": 107.64404296875
+    }
+  }
+}

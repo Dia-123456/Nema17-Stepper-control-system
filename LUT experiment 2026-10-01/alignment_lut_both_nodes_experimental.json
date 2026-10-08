@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "description": "Experimental exact-speed PID+LUT table for both nodes at 720 deg/s. Node 2 failed prior repeatability validation; use only with the dedicated guarded launcher.",
+  "safety": {
+    "max_abs_command_offset_deg": 0.35,
+    "minimum_samples": 5,
+    "maximum_residual_stddev_deg": 0.1,
+    "experimental_maximum_residual_stddev_deg": 0.25,
+    "interpolation_enabled": false,
+    "extrapolation_enabled": false
+  },
+  "entries": [
+    {
+      "node_id": 2,
+      "direction": "clockwise",
+      "speed_deg_s": 720.0,
+      "command_offset_deg": 0.1373291015625,
+      "samples": 12,
+      "residual_mean_deg": -0.1373291015625,
+      "residual_stddev_deg": 0.1981142402486238,
+      "enabled": true,
+      "validation_status": "experimental",
+      "warning": "A prior five-cycle test reached +0.593262 deg on cycle 4 and aborted. This entry is intentionally isolated from the validated LUT file."
+    },
+    {
+      "node_id": 3,
+      "direction": "clockwise",
+      "speed_deg_s": 720.0,
+      "command_offset_deg": -0.25927734375,
+      "samples": 5,
+      "residual_mean_deg": 0.25927734375,
+      "residual_stddev_deg": 0.03610475842929562,
+      "enabled": true,
+      "validation_status": "validated",
+      "validation": "5/5 compensated moves passed with maximum absolute slot error 0.021973 deg"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+LUT-assisted absolute-reference alternating precision sequence
+Result: FAILED
+Mode: alignment and motion
+Completed moves: 6
+Speed: 720 deg/s
+Cycles: 5
+References: {2: 10369, 3: 4899}
+Runtime PID gains: {2: (12.0, 0.05, 0.35), 3: (10.0, 0.0, 0.4)}
+LUT mode: apply
+Experimental LUT allowed: True
+LUT path: /home/sonu/Grafito-Edge-Services/can_stepper/alignment_lut.json
+LUT candidates: {2: 0.1373291015625, 3: -0.25927734375}
+LUT applied: {2: 0.1373291015625, 3: -0.25927734375}
+LUT reasons: {2: 'eligible experimental exact-speed entry', 3: 'eligible validated exact-speed entry'}
+Persistent PID save: no
+Failure: RuntimeError: node 2 slot error +0.593262 deg exceeds 0.500 deg
+cycle 1 node 2: slot error -0.197754 deg, LUT +0.137329 deg, elapsed 1.011 s
+cycle 1 node 3: slot error +0.021973 deg, LUT -0.259277 deg, elapsed 1.315 s
+cycle 2 node 2: slot error -0.021973 deg, LUT +0.137329 deg, elapsed 1.061 s
+cycle 2 node 3: slot error +0.021973 deg, LUT -0.259277 deg, elapsed 1.263 s
+cycle 3 node 2: slot error -0.065918 deg, LUT +0.137329 deg, elapsed 1.009 s
+cycle 3 node 3: slot error +0.021973 deg, LUT -0.259277 deg, elapsed 1.262 s

@@ -1,0 +1,11 @@
+Node 3 continuous speed ladder
+Result: PASSED
+Speeds: [30.0, 60.0, 90.0, 180.0, 360.0, 720.0]
+Completed boundaries: 6/6
+Final alignment error: -0.3955078125
+rev 1 @ 30 deg/s: crossing offset -1.274414 deg, time 12.132 s
+rev 2 @ 60 deg/s: crossing offset -0.329590 deg, time 6.013 s
+rev 3 @ 90 deg/s: crossing offset -1.098633 deg, time 4.039 s
+rev 4 @ 180 deg/s: crossing offset -14.238281 deg, time 2.118 s
+rev 5 @ 360 deg/s: crossing offset -36.232910 deg, time 1.110 s
+rev 6 @ 720 deg/s: crossing offset -64.709473 deg, time 0.605 s

@@ -1,0 +1,24 @@
+Node 3 five-revolution enabled-hold precision test
+Date: 2026-09-29
+
+Direction: clockwise
+Revolutions: 5 continuous
+Desired position: -1800.000000 deg
+Cruise speed: 360 deg/s
+Acceleration/deceleration: 1440 deg/s^2
+Temporary microsteps: 32
+Temporary PID settle tolerance: 0.05 deg
+
+Final enabled-hold position: -1799.978027 deg
+Final enabled-hold error: +0.021973 deg (one encoder count)
+One-second stability: 20/20 readings at +0.021973 deg error
+Visual result: user confirmed aligned
+
+Encoder: healthy
+Driver: healthy
+Faults: none
+Final state after visual confirmation: nodes 2 and 3 disabled
+
+Temporary motion, tolerance, and microstep values were restored after the
+test and were not persisted. The calibrated persistent configuration remains
+unchanged.

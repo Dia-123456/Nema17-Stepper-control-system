@@ -1,0 +1,7 @@
+Absolute-reference alternating precision sequence
+Result: PASSED
+Mode: alignment only
+Completed moves: 0
+Speed: 360 deg/s
+Cycles: 5
+References: {2: 10705, 3: 4899}

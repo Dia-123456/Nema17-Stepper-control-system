@@ -1,0 +1,17 @@
+Absolute-reference alternating precision sequence
+Result: PASSED
+Mode: alignment and motion
+Completed moves: 10
+Speed: 1440 deg/s
+Cycles: 5
+References: {2: 10705, 3: 4899}
+cycle 1 node 2: error -0.285645 deg, elapsed 1.266 s
+cycle 1 node 3: error -0.285645 deg, elapsed 1.265 s
+cycle 2 node 2: error -0.285645 deg, elapsed 1.265 s
+cycle 2 node 3: error -0.285645 deg, elapsed 1.266 s
+cycle 3 node 2: error -0.285645 deg, elapsed 1.265 s
+cycle 3 node 3: error -0.285645 deg, elapsed 1.216 s
+cycle 4 node 2: error -0.241699 deg, elapsed 1.214 s
+cycle 4 node 3: error -0.241699 deg, elapsed 1.215 s
+cycle 5 node 2: error -0.307617 deg, elapsed 1.265 s
+cycle 5 node 3: error -0.241699 deg, elapsed 1.264 s

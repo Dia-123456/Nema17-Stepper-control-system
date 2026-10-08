@@ -1,0 +1,6 @@
+Node 2 precision speed ladder
+Result: ABORTED
+CSV: node_2_speed_ladder_20260929_175431.csv
+Completed revolutions: 4
+Abort reason: node 2: no move completion response within 41.00s
+30 deg/s: n=4 mean_error=+0.137329 deg max_abs_error=0.571289 deg mean_time=13.609 s

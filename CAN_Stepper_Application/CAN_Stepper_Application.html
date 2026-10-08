@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A CAN stepper application coordinating two interlocking discs with PID feedback, endpoint LUT compensation and encoder-verified handoffs. Includes actual CAD and measured error graphs.">
+<title>CAN Stepper Application: Precision Control of Two Interlocking Discs</title>
+<style>
+:root { color-scheme: light; --ink:#243246; --muted:#586579; --line:#d9e1ea; --accent:#136b66; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:#f7f9fc; font:17px/1.75 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { max-width:1100px; margin:0 auto; padding:48px 56px 72px; background:#fff; }
+header { padding-bottom:28px; border-bottom:1px solid var(--line); margin-bottom:32px; }
+.eyebrow { text-transform:uppercase; letter-spacing:.14em; color:var(--accent); font-size:12px; font-weight:700; }
+h1 { font-size:clamp(28px,4vw,42px); line-height:1.18; font-weight:700; max-width:850px; text-transform:none; margin:12px 0 20px; }
+.subtitle { color:var(--muted); font-size:20px; max-width:800px; }
+h2 { margin:52px 0 18px; font-size:23px; line-height:1.35; scroll-margin-top:24px; }
+p { margin:18px 0; }
+a { color:var(--accent); text-underline-offset:3px; }
+nav { padding:20px 24px; background:#f2f7f8; border-radius:8px; }
+nav summary { cursor:pointer; font-weight:600; }
+nav ol { margin:12px 0 0; padding-left:24px; }
+nav li { margin:5px 0; font-size:14px; }
+figure { margin:30px 0 40px; }
+figure img { display:block; max-width:100%; height:auto; margin:auto; border:1px solid var(--line); }
+figure:first-of-type img { width:auto; max-height:680px; }
+figcaption { color:var(--muted); font-size:14px; line-height:1.6; padding-top:12px; }
+.table-wrap { overflow-x:auto; margin:24px 0; border:1px solid var(--line); border-radius:6px; }
+table { border-collapse:collapse; width:100%; font-size:13px; line-height:1.5; }
+th,td { text-align:left; padding:12px; vertical-align:top; border-bottom:1px solid var(--line); min-width:88px; }
+th { background:#edf4f5; color:#244f4c; font-weight:650; }
+tr:last-child td { border-bottom:0; }
+tbody tr:nth-child(even) { background:#f8fafc; }
+pre { white-space:pre; overflow-x:auto; padding:20px; font:13px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace; border-radius:6px; }
+.equation { background:#f1f5f8; border-left:3px solid #83a9a6; }
+.code { background:#152331; color:#e5edf4; }
+footer { margin-top:48px; border-top:1px solid var(--line); padding-top:20px; font-size:14px; color:var(--muted); }
+@media(max-width:650px) { main { padding:28px 18px 48px; } body { font-size:16px; } h2 { font-size:20px; } pre { padding:14px; font-size:12px; } }
+@media print { body { background:white; } main { max-width:none; padding:0; } nav { display:none; } h2 { break-after:avoid; } figure { break-inside:avoid; } table { font-size:10px; } }
+</style>
+</head>
+<body>
+<main>
+<header><p class="eyebrow">CAN stepper application</p><h1>CAN STEPPER APPLICATION: PRECISION CONTROL OF TWO INTERLOCKING DISCS</h1><p class="subtitle">PID feedback, learned stopping compensation and encoder-verified alternating motion</p></header>
+<nav aria-label="Article contents"><details><summary>Article contents</summary><ol><li><a href="#1-application-overview">1. APPLICATION OVERVIEW</a></li><li><a href="#2-hardware-and-control-architecture">2. HARDWARE AND CONTROL ARCHITECTURE</a></li><li><a href="#3-step-1-teach-and-recover-the-physical-alignment">3. STEP 1: TEACH AND RECOVER THE PHYSICAL ALIGNMENT</a></li><li><a href="#4-step-2-establish-and-assess-pid-control">4. STEP 2: ESTABLISH AND ASSESS PID CONTROL</a></li><li><a href="#5-step-3-learn-the-lookup-table-from-stopping-error">5. STEP 3: LEARN THE LOOKUP TABLE FROM STOPPING ERROR</a></li><li><a href="#6-the-implemented-lut-table-and-pid-settings">6. THE IMPLEMENTED LUT TABLE AND PID SETTINGS</a></li><li><a href="#7-measured-performance-pid-only-versus-pid-lut">7. MEASURED PERFORMANCE: PID-ONLY VERSUS PID + LUT</a></li><li><a href="#8-step-4-verify-the-true-physical-endpoint-before-switching-nodes">8. STEP 4: VERIFY THE TRUE PHYSICAL ENDPOINT BEFORE SWITCHING NODES</a></li><li><a href="#9-step-5-alternate-the-motors-with-no-intentional-dwell">9. STEP 5: ALTERNATE THE MOTORS WITH NO INTENTIONAL DWELL</a></li><li><a href="#10-speed-acceleration-and-microstep-limits">10. SPEED, ACCELERATION AND MICROSTEP LIMITS</a></li><li><a href="#11-observed-higher-speed-alternating-result">11. OBSERVED HIGHER-SPEED ALTERNATING RESULT</a></li><li><a href="#12-what-the-application-demonstrates">12. WHAT THE APPLICATION DEMONSTRATES</a></li><li><a href="#publication-note">PUBLICATION NOTE</a></li></ol></details></nav>
+<article>
+<h2 id="1-application-overview">1. APPLICATION OVERVIEW</h2>
+<p>This application demonstrates coordinated precision motion using two encoder-equipped stepper motors on a shared CAN network. Each motor carries a disc with a radial gap. The discs are mounted on perpendicular axes with offset centres: node 2 is the lower motor and node 3 is the elevated motor.</p>
+<p>The operating sequence is simple: node 2 completes one revolution and aligns its gap with the taught starting position; node 3 then completes one revolution and returns to its own starting position. The sequence repeats, with the stationary disc providing clearance for the moving disc. One alternating cycle therefore means two moves, one revolution per motor.</p>
+<p>The implementation combines firmware PID feedback with a Python lookup table (LUT) that compensates repeatable stopping bias. Node 2 also uses a bounded fine-positioning stage before the other motor is released. This is PID + LUT control, not LUT-only control.</p>
+<figure><a href="images/rig_cad.png" title="Open full-resolution figure"><img src="images/rig_cad.png" alt="Figure 1. CAD view of the experimental rig, supplied by the rig owner. The two identical radial-gap discs are mounted on perpendicular, vertically offset motor axes. This is the actual supplied CAD image, not a generated illustration." loading="lazy"></a><figcaption>Figure 1. CAD view of the experimental rig, supplied by the rig owner. The two identical radial-gap discs are mounted on perpendicular, vertically offset motor axes. This is the actual supplied CAD image, not a generated illustration.</figcaption></figure>
+<h2 id="2-hardware-and-control-architecture">2. HARDWARE AND CONTROL ARCHITECTURE</h2>
+<p>The rig uses a 24 V supply, two stepper motors with encoders and CAN-connected driver boards, and a laptop connected to one board through USB. Commands are addressed to node 2 or node 3; the shared CAN connection carries node-specific control and feedback traffic.</p>
+<p>The motor configuration uses 200 full steps per revolution. Encoder calculations use 16,384 counts per revolution. Disc diameter, thickness, slot width and clearance have not been numerically established here, so no mechanical clearance dimensions or collision margin are claimed.</p>
+<p>Control responsibilities are divided as follows:</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Layer table"><table><thead><tr><th scope="col">Layer</th><th scope="col">Responsibility</th></tr></thead><tbody><tr><td>Python sequence controller</td><td>Select the node, speed/profile and LUT offset; command each turn; verify alignment before handoff</td></tr><tr><td>Driver firmware</td><td>Generate motor motion and apply closed-loop encoder feedback using the configured PID gains</td></tr><tr><td>Encoder feedback</td><td>Measure shaft position and compare it with the taught gap-alignment phase</td></tr><tr><td>Stationary-disc guard</td><td>Block the next move unless the other motor is enabled, stationary and within its accepted reference window</td></tr></tbody></table></div>
+<p>Signal path:</p>
+<pre class="equation">Taught physical reference
+    -&gt; one-revolution physical target
+    -&gt; Python LUT-adjusted command
+    -&gt; USB-connected board / CAN network
+    -&gt; addressed driver's motion planner and PID loop
+    -&gt; stepper motor and encoder
+    -&gt; endpoint verification / bounded fine correction
+    -&gt; permission for the other node to rotate</pre>
+<p>The LUT is stored in Python, not written into the driver firmware. The motion experiment changes runtime settings and restores them at exit; it does not save a new persistent firmware configuration or redefine encoder zero.</p>
+<h2 id="3-step-1-teach-and-recover-the-physical-alignment">3. STEP 1: TEACH AND RECOVER THE PHYSICAL ALIGNMENT</h2>
+<p>Both discs are first manually placed in the intended clearance position. Their raw encoder phases are recorded as the physical references. Returning to these phases is more meaningful than declaring whatever position happens to be present at startup to be zero.</p>
+<p>An encoder phase wraps after one revolution. The shortest signed correction is therefore calculated with modular arithmetic:</p>
+<pre class="equation">N = 16384 counts/revolution
+q = 360 / N = 0.02197265625 degrees/count
+delta_counts = ((R - (C mod N) + N/2) mod N) - N/2
+correction_deg = delta_counts * q
+slot_error_deg = -delta_counts * q</pre>
+<p>R is the taught raw reference and C is the current encoder count. Positive slot error means actual position is above the physical reference. The aligned absolute base is B = (C + delta_counts) * q.</p>
+<p>Startup recovery is deliberately bounded. The calibration and higher-speed runner allow only a small automatic correction window of 2.5 degrees. The stationary guard is established before correcting the other disc. A larger discrepancy stops the sequence for inspection instead of attempting unrestricted homing through interlocking discs.</p>
+<p>The tested direction convention is clockwise for negative angular targets, viewed from the shaft/disc side. This convention must be checked again if wiring, direction settings or the observation viewpoint changes.</p>
+<h2 id="4-step-2-establish-and-assess-pid-control">4. STEP 2: ESTABLISH AND ASSESS PID CONTROL</h2>
+<p>PID feedback reacts to the difference between the planned position and encoder position. A representative description of the controller is:</p>
+<pre class="equation">e_tracking(t) = r(t) - theta(t)
+v_control(t) = v_feedforward(t)
+               + Kp * e_tracking(t)
+               + Ki * integral(e_tracking(t) dt)
+               - Kd * v_measured(t)</pre>
+<p>r(t) is planned position and theta(t) is measured position. Kp supplies proportional correction, Ki addresses accumulated error, and Kd provides damping. This equation explains the control structure; it is not a claim that every internal detail of the installed firmware has been reconstructed. With Ki = 0, the active feedback is the PD special case of the configurable PID controller.</p>
+<p>PID gains were compared using recorded position-versus-time, velocity-versus-time and error-versus-time plots. The useful settings differed between motors, so a single shared gain set was not imposed.</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="PID tuning stage table"><table><thead><tr><th scope="col">PID tuning stage</th><th scope="col">Node</th><th scope="col">Kp</th><th scope="col">Ki</th><th scope="col">Kd</th><th scope="col">Observed overshoot (degrees)</th><th scope="col">Observed settling time (s)</th></tr></thead><tbody><tr><td>Initial setting, one trace</td><td>2</td><td>12</td><td>0.30</td><td>0.10</td><td>20.434570</td><td>1.578536</td></tr><tr><td>Tuned setting, mean of five traces</td><td>2</td><td>12</td><td>0.05</td><td>0.35</td><td>2.245605</td><td>0.999493</td></tr><tr><td>Initial setting, one trace</td><td>3</td><td>12</td><td>0.30</td><td>0.10</td><td>20.588379</td><td>1.377146</td></tr><tr><td>Tuned setting, mean of five traces</td><td>3</td><td>10</td><td>0</td><td>0.40</td><td>0.127441</td><td>1.181807</td></tr></tbody></table></div>
+<p>These are PID-tuning results at a 720 degrees/s setting, not an isolated LUT comparison. The baseline has one trace per node and the tuned results have five traces per node. The table supports reduced overshoot and shorter observed settling time in those captures; it does not imply that every tracking metric improved.</p>
+<figure><a href="images/pid_gain_comparison.png" title="Open full-resolution figure"><img src="images/pid_gain_comparison.png" alt="Figure 2. Original PID gain-sweep graph at 720 degrees/s. The error and velocity curves show how gain selection affects response. Each legend identifies the corresponding Kp, Ki and Kd. This graph is PID-only." loading="lazy"></a><figcaption>Figure 2. Original PID gain-sweep graph at 720 degrees/s. The error and velocity curves show how gain selection affects response. Each legend identifies the corresponding Kp, Ki and Kd. This graph is PID-only.</figcaption></figure>
+<figure><a href="images/pid_node2_response.png" title="Open full-resolution figure"><img src="images/pid_node2_response.png" alt="Figure 3. Node 2 PID-only response: position, velocity and error versus time at 720 degrees/s and 2,880 degrees/s squared acceleration, with Kp = 12, Ki = 0.05 and Kd = 0.35. The displayed final target-minus-position error is approximately +0.198 degrees. This historical capture is not the later fine-finish profile." loading="lazy"></a><figcaption>Figure 3. Node 2 PID-only response: position, velocity and error versus time at 720 degrees/s and 2,880 degrees/s squared acceleration, with Kp = 12, Ki = 0.05 and Kd = 0.35. The displayed final target-minus-position error is approximately +0.198 degrees. This historical capture is not the later fine-finish profile.</figcaption></figure>
+<figure><a href="images/pid_node3_response.png" title="Open full-resolution figure"><img src="images/pid_node3_response.png" alt="Figure 4. Node 3 PID-only response: position, velocity and error versus time at 720 degrees/s and 2,880 degrees/s squared acceleration, with Kp = 10, Ki = 0 and Kd = 0.40. The displayed final target-minus-position error is approximately +0.132 degrees." loading="lazy"></a><figcaption>Figure 4. Node 3 PID-only response: position, velocity and error versus time at 720 degrees/s and 2,880 degrees/s squared acceleration, with Kp = 10, Ki = 0 and Kd = 0.40. The displayed final target-minus-position error is approximately +0.132 degrees.</figcaption></figure>
+<figure><a href="images/pid_node2_repeatability.png" title="Open full-resolution figure"><img src="images/pid_node2_repeatability.png" alt="Figure 5. Five repeated node 2 PID-only error and velocity captures with Kp = 12, Ki = 0.05 and Kd = 0.35." loading="lazy"></a><figcaption>Figure 5. Five repeated node 2 PID-only error and velocity captures with Kp = 12, Ki = 0.05 and Kd = 0.35.</figcaption></figure>
+<figure><a href="images/pid_node3_repeatability.png" title="Open full-resolution figure"><img src="images/pid_node3_repeatability.png" alt="Figure 6. Five repeated node 3 PID-only error and velocity captures with Kp = 10, Ki = 0 and Kd = 0.40." loading="lazy"></a><figcaption>Figure 6. Five repeated node 3 PID-only error and velocity captures with Kp = 10, Ki = 0 and Kd = 0.40.</figcaption></figure>
+<p>In the three-panel plots, dashed position and velocity traces represent the planned motion. Actual encoder position, measured velocity and controller velocity output show the response. The error panel distinguishes tracking error from the remaining distance to the final target. Planned finish and reported completion are marked separately.</p>
+<p>Useful assessment equations are:</p>
+<pre class="equation">e_stop = theta_stop - T_slot
+RMS_tracking = sqrt(mean(e_tracking[k]^2))
+IAE = integral(abs(e_tracking(t)) dt)
+overshoot = max(0, maximum directional travel - requested travel)</pre>
+<p>The historical PID plots report final error as target minus measured position. The LUT endpoint comparisons below use measured position minus physical target. Their signs are opposite; comparisons of accuracy use absolute magnitude, not inconsistent signed values.</p>
+<h2 id="5-step-3-learn-the-lookup-table-from-stopping-error">5. STEP 3: LEARN THE LOOKUP TABLE FROM STOPPING ERROR</h2>
+<p>PID controls the dynamic motion, but the encoder can still report a small repeatable error when a move is declared complete. The LUT pre-adjusts the command to counter that bias.</p>
+<p>For clockwise revolution k of node i:</p>
+<pre class="equation">T_slot(i, k) = B_i - 360 * k
+T_command(i, k) = T_slot(i, k) + L_i(profile)</pre>
+<p>T_slot is the physical gap-alignment target. T_command is the shifted target sent to the driver. L is an algebraic correction in degrees; it does not multiply speed or replace feedback.</p>
+<p>Calibration uses five trials under a specified speed, acceleration, microstep and PID profile:</p>
+<pre class="equation">1. Verify the stationary disc and restore the physical starting phase.
+2. Command one complete revolution with the current offset.
+3. Read the encoder after completion, wait 0.15 s, and take five raw samples.
+4. Calculate the median physical stopping error for that trial.
+5. Repeat for five trials and calculate mean bias and sample variation.
+6. Subtract mean bias from the old offset to obtain a candidate LUT value.
+7. Verify the candidate with a fresh batch before using it in the sequence.</pre>
+<p>The calculation is:</p>
+<pre class="equation">e_j = median(raw_slot_errors[j, sample]) * q
+mean_bias = sum(e_j) / n
+sample_std = sqrt(sum((e_j - mean_bias)^2) / (n - 1))
+L_new = L_old - mean_bias
+n = 5</pre>
+<p>Learning uses the arrival measurements BEFORE any final corrective move. Learning from zero errors after correction would hide the bias that the LUT is supposed to compensate. The update assumes a small command change produces a roughly equal endpoint change locally; it is a candidate requiring verification, not a guarantee under all loads or speeds.</p>
+<p>Node 3 example: five PID-only stopping errors averaged +0.25927734375 degrees. Starting from zero correction gives L_new = -0.25927734375 degrees.</p>
+<p>Node 2 example: with its final fine profile and an offset of +0.017578125 degrees, the five calibration arrivals were each one encoder count high. The revised correction was +0.017578125 - 0.02197265625 = -0.00439453125 degrees.</p>
+<h2 id="6-the-implemented-lut-table-and-pid-settings">6. THE IMPLEMENTED LUT TABLE AND PID SETTINGS</h2>
+<p>The installed table is a speed/profile-specific ENDPOINT compensation table. It is not a full angular encoder-linearity table, torque compensation map or 16,384-entry correction array. Entries are selected by their speed/profile key; no interpolation was implemented.</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Node table"><table><thead><tr><th scope="col">Node</th><th scope="col">Speed setting (degrees/s)</th><th scope="col">LUT offset (degrees)</th><th scope="col">Kp</th><th scope="col">Ki</th><th scope="col">Kd</th><th scope="col">Motion microsteps</th><th scope="col">PID tolerance (degrees)</th><th scope="col">Evidence/status</th></tr></thead><tbody><tr><td>2</td><td>360</td><td>-0.00439453125</td><td>12</td><td>0</td><td>0.35</td><td>256</td><td>0.012</td><td>Final profile verified over five trials, with fine finish</td></tr><tr><td>2</td><td>720</td><td>-0.00439453125</td><td>12</td><td>0</td><td>0.35</td><td>256</td><td>0.012</td><td>Same offset verified over five trials, with drift correction when needed</td></tr><tr><td>3</td><td>720</td><td>-0.25927734375</td><td>10</td><td>0</td><td>0.40</td><td>32</td><td>0.5</td><td>Five-sample calibration and five-move LUT verification</td></tr><tr><td>2</td><td>1440</td><td>-0.00439453125</td><td>12</td><td>0</td><td>0.35</td><td>128 during rotation; 256 at finish</td><td>0.012</td><td>Experimental reuse of the 720 profile with changed rotation microsteps</td></tr><tr><td>3</td><td>1440</td><td>-0.25927734375</td><td>10</td><td>0</td><td>0.40</td><td>32</td><td>0.5</td><td>Experimental reuse of the 720 calibration</td></tr></tbody></table></div>
+<p>Node 3's same correction is also reused at 360 degrees/s; that is extrapolation, not a separate 360 degrees/s calibration. Neither 1440 degrees/s entry was independently re-learned at that speed. The old unprofiled node 2 fallback is not the final stopping profile and should not be treated as a validated setting for arbitrary speeds.</p>
+<p>Example of the profile and target-selection logic:</p>
+<pre class="code"><code># Illustrative extraction, not a complete runnable hardware controller.
+PROFILES = {
+    (2, 360): {&quot;lut_deg&quot;: -0.00439453125, &quot;pid&quot;: (12, 0, 0.35),
+               &quot;microsteps&quot;: 256, &quot;tolerance_deg&quot;: 0.012},
+    (2, 720): {&quot;lut_deg&quot;: -0.00439453125, &quot;pid&quot;: (12, 0, 0.35),
+               &quot;microsteps&quot;: 256, &quot;tolerance_deg&quot;: 0.012},
+    (3, 720): {&quot;lut_deg&quot;: -0.25927734375, &quot;pid&quot;: (10, 0, 0.40),
+               &quot;microsteps&quot;: 32, &quot;tolerance_deg&quot;: 0.5},
+}
+
+def command_target(node_id, speed, aligned_base, revolution):
+    profile = PROFILES[(node_id, speed)]  # Reject unknown profiles.
+    slot_target = aligned_base - 360.0 * revolution
+    return slot_target, slot_target + profile[&quot;lut_deg&quot;]
+
+def update_lut(old_offset, arrival_errors):
+    return old_offset - sum(arrival_errors) / len(arrival_errors)</code></pre>
+<p>An offset smaller than one encoder count can still shift the commanded position, but the encoder cannot independently resolve that sub-count mechanical change.</p>
+<h2 id="7-measured-performance-pid-only-versus-pid-lut">7. MEASURED PERFORMANCE: PID-ONLY VERSUS PID + LUT</h2>
+<p>The cleanest direct comparison is node 3 at 720 degrees/s. The two recorded moves used the same physical target and taught reference, the same PID gains (10, 0, 0.40), 32 microsteps and a 0.5-degree PID tolerance. The changed variable was whether the LUT offset was applied. There is one move in each condition, so this is a single A/B observation rather than a statistical population claim.</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Metric table"><table><thead><tr><th scope="col">Metric</th><th scope="col">PID-only</th><th scope="col">PID + LUT</th></tr></thead><tbody><tr><td>Applied LUT correction (degrees)</td><td>0</td><td>-0.25927734375</td></tr><tr><td>Physical stopping error, actual minus target (degrees)</td><td>+0.28564453125</td><td>+0.02197265625</td></tr><tr><td>Absolute error in encoder counts</td><td>13</td><td>1</td></tr><tr><td>Recorded move elapsed time (s)</td><td>1.263181</td><td>1.264864</td></tr><tr><td>PID gains (Kp, Ki, Kd)</td><td>(10, 0, 0.40)</td><td>(10, 0, 0.40)</td></tr></tbody></table></div>
+<p>The absolute stopping error was 13 times smaller, a 92.3% reduction in this single A/B test:</p>
+<pre class="equation">reduction = (abs(e_PID) - abs(e_PID_LUT)) / abs(e_PID) * 100
+          = (0.28564453125 - 0.02197265625) / 0.28564453125 * 100
+          = 92.307692... percent</pre>
+<p>Elapsed times were essentially alike; these observations do not demonstrate a speedup from adding the LUT.</p>
+<p>Separate five-trial batches provide additional endpoint evidence for node 3. The PID-only batch supplied the calibration bias; the later PID + LUT batch verified the correction. These are NOT five paired A/B trials.</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Batch table"><table><thead><tr><th scope="col">Batch</th><th scope="col">Signed mean stopping error (degrees)</th><th scope="col">Sample standard deviation (degrees)</th><th scope="col">Maximum absolute stopping error (degrees)</th><th scope="col">Mean elapsed time (s)</th></tr></thead><tbody><tr><td>PID-only calibration, n = 5</td><td>+0.259277344</td><td>0.036104758</td><td>0.285644531</td><td>1.222078</td></tr><tr><td>PID + LUT verification, n = 5</td><td>+0.017578125</td><td>0.009826471</td><td>0.021972656</td><td>1.283335</td></tr></tbody></table></div>
+<figure><a href="images/pid_lut_endpoint_comparison.png" title="Open full-resolution figure"><img src="images/pid_lut_endpoint_comparison.png" alt="Figure 7. Stopping-error comparison calculated from the archived measurements. Left: the same-configuration node 3 single A/B observation. Right: five PID-only calibration trials and five PID + LUT verification trials, shown as separate batches, not paired trials. The dashed line marks one encoder count. This endpoint graph is not a reconstructed position/velocity trajectory." loading="lazy"></a><figcaption>Figure 7. Stopping-error comparison calculated from the archived measurements. Left: the same-configuration node 3 single A/B observation. Right: five PID-only calibration trials and five PID + LUT verification trials, shown as separate batches, not paired trials. The dashed line marks one encoder count. This endpoint graph is not a reconstructed position/velocity trajectory.</figcaption></figure>
+<p>For node 2, the available development results do not isolate the LUT's contribution. A five-run PID-only capture at 720 degrees/s had a maximum absolute final error of 0.37353515625 degrees, with gains (12, 0.05, 0.35), 8 microsteps and a 0.5-degree tolerance. The final five-run 720 profile reached zero-count checked endpoints with PID + LUT PLUS fine finishing, using gains (12, 0, 0.35), 256 microsteps and a 0.012-degree tolerance. One post-completion drift required correction.</p>
+<p>That is a system-level improvement involving several changed settings and corrective moves. It must not be described as a measured percentage improvement due to the node 2 LUT alone. A matched PID-only versus PID + LUT trial under identical final settings would be needed to quantify its isolated contribution.</p>
+<p>The LUT trials recorded endpoint summaries rather than synchronized full motion traces. Accordingly, the original time-domain graphs are labelled PID-only, and the LUT graph compares only actual recorded endpoint measurements.</p>
+<h2 id="8-step-4-verify-the-true-physical-endpoint-before-switching-nodes">8. STEP 4: VERIFY THE TRUE PHYSICAL ENDPOINT BEFORE SWITCHING NODES</h2>
+<p>A completed command is not automatically proof that the disc gap is aligned. Node 2's compensated command target is slightly displaced from the true physical slot target, so a finishing stage checks the taught encoder phase directly.</p>
+<p>The fine stage uses 256 microsteps, gains (12, 0, 0.35), a 0.012-degree PID tolerance, a 30 degrees/s correction speed and 720 degrees/s squared correction acceleration. It allows at most three corrective commands, with a six-second timeout per correction.</p>
+<p>After settling for 0.15 s, three fresh raw encoder readings must all show zero-count error. A failed check triggers a bounded correction to the TRUE slot target, without adding the LUT again. Failure to meet the limit aborts the sequence. The higher-speed runner rechecks node 2 immediately before node 3 starts and corrects later drift if necessary.</p>
+<p>Separate coarse physical limits reject unsafe arrivals: 0.65 degrees on node 2 and 0.5 degrees on node 3. These are not the node 2 fine acceptance criterion. During handoff, node 2 must be stationary, enabled and at zero-count reference error; node 3 must be stationary, enabled and within 0.5 degrees.</p>
+<p>Node 3 therefore has a different acceptance requirement from node 2. The implementation does not claim zero-count accuracy for both nodes.</p>
+<h2 id="9-step-5-alternate-the-motors-with-no-intentional-dwell">9. STEP 5: ALTERNATE THE MOTORS WITH NO INTENTIONAL DWELL</h2>
+<p>The sequencing logic is:</p>
+<pre class="code"><code># Algorithm outline; hardware checks and bounded helpers are mandatory.
+for cycle in range(1, cycle_count + 1):
+    for moving_id, stationary_id in ((2, 3), (3, 2)):
+        verify_health_and_temperature()
+        if moving_id == 3:
+            recheck_and_finish_node2_if_needed()
+        verify_enabled_stationary_guard(stationary_id)
+        slot_target[moving_id] -= 360.0
+        target = slot_target[moving_id] + lut_offset[moving_id]
+        move_with_firmware_pid(moving_id, target, speed, acceleration)
+        check_coarse_physical_endpoint(moving_id)
+        if moving_id == 2:
+            bounded_finish_at_true_slot_target()
+        verify_enabled_stationary_guard(moving_id)
+# On completion or failure: disable motors and restore runtime settings.</code></pre>
+<p>There is no added dwell between accepted moves, but switching is not instantaneous. CAN/USB exchanges, parameter writes, health checks, encoder reads, settling and corrective moves all take time. Precision verification is part of the handoff rather than an optional pause.</p>
+<h2 id="10-speed-acceleration-and-microstep-limits">10. SPEED, ACCELERATION AND MICROSTEP LIMITS</h2>
+<p>The normal motion profile sets both the motion and closed-loop speed limits to the requested speed v and uses acceleration a = 4v.</p>
+<p>For a rest-to-rest move of distance D:</p>
+<pre class="equation">planned_peak_speed = min(v, sqrt(a * D))
+triangular_move_time = 2 * sqrt(D / a)
+trapezoidal_move_time = D / v + v / a</pre>
+<p>The trapezoidal expression applies when the commanded speed is reached; otherwise the move is triangular. For a 360-degree move at v = 1440 degrees/s and a = 5760 degrees/s squared, the ideal planned peak is 1440 degrees/s at the boundary between the two shapes. There is no long constant-speed plateau, and the real response need not attain the planned peak.</p>
+<p>Step-pulse demand is also checked:</p>
+<pre class="equation">pulse_frequency = abs(v) * full_steps_per_revolution * microsteps / 360
+planning_demand = 1.15 * pulse_frequency</pre>
+<p>The runner uses a conservative 200,000 pulses/s planning ceiling. This is a software planning bound, not a measured hardware maximum.</p>
+<p>At 1440 degrees/s with 200 full steps per revolution, 256 microsteps require 204,800 pulses/s before headroom. The experiment therefore used 128 microsteps for node 2 rotation, requiring 102,400 pulses/s, or 117,760 pulses/s including headroom. Node 2 returns to 256 microsteps for its fine finish. Node 3 stays at 32 microsteps, requiring 25,600 pulses/s before headroom.</p>
+<h2 id="11-observed-higher-speed-alternating-result">11. OBSERVED HIGHER-SPEED ALTERNATING RESULT</h2>
+<p>At a 1440 degrees/s setting, ten alternating cycles completed: ten revolutions on each node and twenty moves in total. Both nodes used PID feedback and their LUT corrections. The 1440 profiles remain experimental reuse, not independent calibrations.</p>
+<p>Node 2 reached zero-count error at the accepted checks, with corrective finishing and later rechecks where needed. The observed magnitude of node 3's slot error was at most 0.0439453125 degrees, or two encoder counts, in that sequence.</p>
+<p>Sampled peak velocities were approximately 1389.66-1404.97 degrees/s for node 2 and 1329.45-1360.01 degrees/s for node 3. These are measured sampled peaks, not proof that either motor sustained exactly 1440 degrees/s.</p>
+<p>Typical printed handoff setup intervals were about 0.41-0.46 s. Corrective finishing increased some intervals, with a largest observed value of about 3.76 s. That metric excludes additional configuration writes before motion. The result is therefore encoder-verified alternating operation at a 1440 degrees/s setting, not uninterrupted or instant-switching rotation.</p>
+<p>After disabling the motors, both showed a two-count magnitude shift (0.0439453125 degrees). Powered holding accuracy and unpowered mechanical retention are different requirements.</p>
+<h2 id="12-what-the-application-demonstrates">12. WHAT THE APPLICATION DEMONSTRATES</h2>
+<p>The application shows how CAN-addressed stepper nodes can coordinate interlocking mechanisms while keeping the fast feedback loop in each driver. PID tuning improves the recorded transient response, a learned endpoint LUT reduces repeatable bias, and encoder-based guards prevent the other disc from starting before the tested acceptance criterion is met.</p>
+<p>The strongest isolated LUT result is the node 3 single A/B test: stopping error decreased from thirteen encoder counts to one count with unchanged PID settings. Node 2's tighter accepted endpoint came from the combined PID + LUT + microstep + fine-correction design, not the LUT alone.</p>
+<p>Zero encoder-count error means agreement with the taught code at the sampled checks. It does not prove zero physical error below the 0.02197265625-degree encoder increment, nor account for all encoder accuracy, shaft compliance, disc mounting or mechanical clearance effects. Likewise, finite successful trials cannot guarantee identical performance under every load, temperature, direction or future mounting condition.</p>
+<p>The LUT should be recalibrated or revalidated when speed, acceleration, direction, load, microsteps, motor current, PID settings or disc mounting changes. Small-window reference recovery is not a substitute for a measured collision envelope. Faults, thermal warnings, encoder/reference disagreement, communication failure or timeout must stop the sequence rather than release the next motor.</p>
+<h2 id="publication-note">PUBLICATION NOTE</h2>
+<p>This text can be copied into a website article. Place the supplied images at the figure markers and retain their captions and evidence labels. The companion HTML preview embeds the same figures using relative image paths; keep its images folder alongside it. The original controller programs, taught references and previous technical documentation are unchanged. Preparing this publication does not run or recalibrate the motors.</p>
+</article>
+<footer><a href="CAN_Stepper_Application.txt">Download the plain-text article</a>. Figures use local relative paths; no external scripts or online services are required.</footer>
+</main>
+</body>
+</html>

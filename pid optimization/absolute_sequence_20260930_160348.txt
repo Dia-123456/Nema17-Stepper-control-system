@@ -1,0 +1,19 @@
+Absolute-reference alternating precision sequence
+Result: PASSED
+Mode: alignment and motion
+Completed moves: 10
+Speed: 7200 deg/s
+Cycles: 5
+References: {2: 10369, 3: 4899}
+Runtime PID gains: {2: (12.0, 0.05, 0.415), 3: (10.0, 0.0, 0.4)}
+Persistent PID save: no
+cycle 1 node 2: error -0.285645 deg, elapsed 0.810 s
+cycle 1 node 3: error +0.087891 deg, elapsed 0.759 s
+cycle 2 node 2: error -0.219727 deg, elapsed 0.708 s
+cycle 2 node 3: error +0.219727 deg, elapsed 0.759 s
+cycle 3 node 2: error -0.285645 deg, elapsed 1.367 s
+cycle 3 node 3: error +0.153809 deg, elapsed 0.658 s
+cycle 4 node 2: error -0.307617 deg, elapsed 1.366 s
+cycle 4 node 3: error +0.307617 deg, elapsed 0.658 s
+cycle 5 node 2: error -0.153809 deg, elapsed 0.810 s
+cycle 5 node 3: error -0.263672 deg, elapsed 1.366 s

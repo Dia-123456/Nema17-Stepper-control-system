@@ -1,0 +1,1 @@
+timestamp,cycle,node_id,speed_deg_s,desired_deg,slot_target_deg,command_target_deg,lut_candidate_deg,lut_applied_deg,position_deg,error_deg,slot_error_deg,command_error_deg,reference_error_deg,elapsed_s

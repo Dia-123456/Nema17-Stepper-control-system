@@ -1,0 +1,15 @@
+LUT-assisted absolute-reference alternating precision sequence
+Result: PASSED
+Mode: alignment only
+Completed moves: 0
+Speed: 720 deg/s
+Cycles: 1
+References: {2: 10369, 3: 4899}
+Runtime PID gains: {2: (12.0, 0.05, 0.35), 3: (10.0, 0.0, 0.4)}
+LUT mode: off
+Experimental LUT allowed: False
+LUT path: /home/sonu/Grafito-Edge-Services/can_stepper/alignment_lut.json
+LUT candidates: {2: 0.0, 3: 0.0}
+LUT applied: {2: 0.0, 3: 0.0}
+LUT reasons: {2: 'expected one exact-speed entry, found 0', 3: 'expected one exact-speed entry, found 0'}
+Persistent PID save: no

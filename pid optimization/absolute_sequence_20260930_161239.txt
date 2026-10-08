@@ -1,0 +1,16 @@
+Absolute-reference alternating precision sequence
+Result: FAILED
+Mode: alignment and motion
+Completed moves: 6
+Speed: 60000 deg/s
+Cycles: 5
+References: {2: 10369, 3: 4899}
+Runtime PID gains: {2: (12.0, 0.05, 0.415), 3: (10.0, 0.0, 0.4)}
+Persistent PID save: no
+Failure: NodeFault: node 2: fault code 2
+cycle 1 node 2: error +0.197754 deg, elapsed 0.861 s
+cycle 1 node 3: error -0.285645 deg, elapsed 0.811 s
+cycle 2 node 2: error -0.241699 deg, elapsed 0.760 s
+cycle 2 node 3: error -0.219727 deg, elapsed 0.810 s
+cycle 3 node 2: error -0.285645 deg, elapsed 0.708 s
+cycle 3 node 3: error -0.285645 deg, elapsed 0.810 s

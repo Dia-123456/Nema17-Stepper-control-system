@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "encoder_counts_per_revolution": 16384,
+  "max_automatic_correction_deg": 2.5,
+  "teaching_note": "User visually confirmed both discs aligned on 2026-10-01; five stable raw readings per disabled node. No SET_ZERO or board flash save.",
+  "nodes": {
+    "2": {
+      "aligned_raw_count": 10571,
+      "aligned_raw_deg": 232.27294921875
+    },
+    "3": {
+      "aligned_raw_count": 5075,
+      "aligned_raw_deg": 111.51123046875
+    }
+  }
+}

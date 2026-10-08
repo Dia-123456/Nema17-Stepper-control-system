@@ -1,0 +1,14 @@
+Alternating node 2 / node 3 precision sequence
+Result: PASSED
+Completed moves: 10/10
+Speeds: [360.0, 360.0, 360.0, 360.0, 360.0]
+stage 1 node 2 speed 360: error -0.241699 deg, attempts 1, elapsed 1.817 s
+stage 1 node 3 speed 360: error -0.219727 deg, attempts 1, elapsed 1.818 s
+stage 2 node 2 speed 360: error -0.307617 deg, attempts 1, elapsed 1.868 s
+stage 2 node 3 speed 360: error -0.219727 deg, attempts 1, elapsed 1.819 s
+stage 3 node 2 speed 360: error -0.241699 deg, attempts 1, elapsed 1.820 s
+stage 3 node 3 speed 360: error -0.219727 deg, attempts 1, elapsed 1.819 s
+stage 4 node 2 speed 360: error -0.241699 deg, attempts 1, elapsed 1.817 s
+stage 4 node 3 speed 360: error -0.219727 deg, attempts 1, elapsed 1.817 s
+stage 5 node 2 speed 360: error -0.307617 deg, attempts 1, elapsed 1.816 s
+stage 5 node 3 speed 360: error -0.219727 deg, attempts 1, elapsed 1.921 s

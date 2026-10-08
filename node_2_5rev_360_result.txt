@@ -1,0 +1,23 @@
+Node 2 five-revolution precision test
+Date: 2026-09-29
+
+Direction: clockwise
+Revolutions: 5 continuous
+Target: -1800.000000 deg
+Cruise speed: 360 deg/s
+Acceleration/deceleration: 1440 deg/s^2
+Temporary PID settle tolerance: 0.05 deg
+
+Zero readback: +0.000000 deg
+Final position: -1800.000000 deg
+Final error: +0.000000 deg
+Motion time: 5.960 s
+One-second stability sample: 20/20 readings at 0.000000 deg error
+
+Encoder: healthy
+Driver: healthy
+Faults: none
+Final state: nodes 2 and 3 disabled
+
+Runtime motion/tolerance changes were restored after the test and were not
+persisted. The calibrated persistent configuration remains unchanged.
